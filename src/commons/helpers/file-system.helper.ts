@@ -20,6 +20,10 @@ async function _readFile(filename: string): Promise<string> {
 async function _writeFile(filename: string, content: string): Promise<void> {
   const filepath = `.${DATA_DIRECTORY}/${filename}`
   try {
+    if (!fs.existsSync(`.${DATA_DIRECTORY}`)) {
+      fs.mkdirSync(`.${DATA_DIRECTORY}`)
+    }
+
     fs.writeFileSync(filepath, content)
   } catch (err) {
     throw err

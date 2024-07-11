@@ -1,5 +1,6 @@
 # Others
 docker-compose.yml
+/data
 
 # compiled output
 /dist
