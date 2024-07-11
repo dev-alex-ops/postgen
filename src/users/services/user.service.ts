@@ -1,48 +1,90 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { User } from '../entities/user.entity';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
+import { UserEntity } from '../../databases/entities/user.entity'
+import { UserRepository } from '../../databases/repositories/user.repository'
+import { UserError } from '../../databases/enums/user.enum'
+import {
+  CreateUser,
+  FindUser,
+  UpdateUser,
+} from '../../databases/interfaces/user.interface'
+import {
+  CreateUserResponse,
+  FindUserResponse,
+} from '../interfaces/user.interface'
 
 @Injectable()
-export class UsersService {
-  private maxId: number = 0;
-  private users: User[] = [];
+export class UserService {
+  constructor(private _repository: UserRepository) {}
 
-  list(): any {
-    return this.users;
-  }
+  createUser(create: CreateUser): CreateUserResponse {
+    let find: FindUser
+    let found: UserEntity[]
 
-  find(id: number): User {
-    const found = this.users.find((item) => item.id == id);
-    if (!found) {
-      throw new NotFoundException({
-        message: `User with id ${id} could not be found`,
-      });
+    if (create.id) {
+      find = { id: create.id }
+      found = this._repository.find(find)
+      if (found.length !== 0) {
+        throw new BadRequestException({
+          message: UserError.IdAlreadyRegistered,
+        })
+      }
     }
-    return found;
+
+    find = { username: create.username }
+    found = this._repository.find(find)
+    if (found.length !== 0) {
+      throw new BadRequestException({
+        message: UserError.UsernameAlreadyRegistered,
+      })
+    }
+
+    find = { email: create.email }
+    found = this._repository.find(find)
+    if (found.length !== 0) {
+      throw new BadRequestException({
+        message: UserError.EmailAlreadyRegistered,
+      })
+    }
+
+    const user: UserEntity = this._repository.create(create)
+
+    const response: CreateUserResponse = { user }
+    return response
   }
 
-  create(payload: any): any {
-    this.maxId++;
-    const newUser = {
-      id: this.maxId,
-      ...payload,
-    };
-    return {
-      message: `User succesfully created!`,
-      id: newUser.id,
-    };
+  findUser(find: FindUser): FindUserResponse {
+    const [user]: UserEntity[] = this._repository.find(find)
+
+    const response: FindUserResponse = { user }
+    return response
   }
 
-  update(id: number, payload: any): any {
-    const found = this.find(id);
-    return {
-      message: `User ${id} succesfully modified:`,
-      payload,
-    };
+  findUsers(find: FindUser): FindUserResponse {
+    const users: UserEntity[] = this._repository.find(find)
+
+    const response: FindUserResponse = { users }
+    return response
   }
 
-  delete(id: number): any {
-    return {
-      message: `User ${id} succesfully removed!`,
-    };
+  updateUser(find: FindUser, update: UpdateUser): void {
+    const user = this._repository.find(find)
+    if (!user) {
+      throw new NotFoundException({ message: UserError.NotFound })
+    }
+
+    this._repository.update(find, update)
+  }
+
+  deleteUser(find: FindUser): void {
+    const user = this._repository.find(find)
+    if (!user) {
+      throw new NotFoundException({ message: UserError.NotFound })
+    }
+
+    this._repository.delete(find)
   }
 }

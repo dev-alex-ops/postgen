@@ -1,71 +1,83 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Message } from '../entities/message.entity';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
+import { MessageEntity } from '../../databases/entities/message.entity'
+import { MessageRepository } from '../../databases/repositories/message.repository'
+import { UserRepository } from '../../databases/repositories/user.repository'
+import { MessageError } from '../../databases/enums/message.enum'
+import { UserError } from '../../databases/enums/user.enum'
+import {
+  CreateMessage,
+  FindMessage,
+  UpdateMessage,
+} from '../../databases/interfaces/message.interface'
+import { FindUser } from '../../databases/interfaces/user.interface'
+import {
+  CreateMessageResponse,
+  FindMessageResponse,
+} from '../interfaces/message.interface'
 
 @Injectable()
-export class MessagesService {
-  private maxId: number = 3;
-  private messages: Message[] = [
-    {
-      id: 1,
-      content: 'Este es el primer mensaje, qué ilusión',
-      userId: 1,
-    },
-    {
-      id: 2,
-      content: 'Ahora este es el segundo mensaje, cómo mola!',
-      userId: 1,
-    },
-    {
-      id: 3,
-      content: 'Este es MI primer mensaje, que no el primero de todos, OJETE *',
-      userId: 2,
-    },
-  ];
+export class MessageService {
+  constructor(
+    private _messageRepository: MessageRepository,
+    private _userRepository: UserRepository,
+  ) {}
 
-  findAll() {
-    return this.messages;
-  }
-
-  findOne(id: number): Message {
-    const found = this.messages.find((message) => message.id === id);
-    if (!found) {
-      throw new NotFoundException(`Message with id ${id} could not be found`);
+  createMessage(create: CreateMessage): CreateMessageResponse {
+    const findUser: FindUser = { id: create.userId }
+    const [user] = this._userRepository.find(findUser)
+    if (!user) {
+      throw new BadRequestException({ message: UserError.NotFound })
     }
 
-    return found;
-  }
-
-  create(payload: any) {
-    this.maxId++;
-    const newMessage = {
-      id: this.maxId,
-      ...payload,
-    };
-    this.messages.push(newMessage);
-    return {
-      message: `Your message has been posted!`,
-      id: newMessage.id,
-    };
-  }
-
-  update(id: number, payload: any) {
-    const index = this.messages.findIndex((message) => message.id == id);
-
-    if (index == -1) {
-      throw new NotFoundException(`Message with id ${id} could not be found.`);
+    if (create.id) {
+      const findMessage: FindMessage = { id: create.id }
+      const found = this._messageRepository.find(findMessage)
+      if (found.length !== 0) {
+        throw new BadRequestException({
+          message: MessageError.IdAlreadyRegistered,
+        })
+      }
     }
 
-    if (payload.content) {
-      this.messages[index].content = payload.content;
-    }
+    const message = this._messageRepository.create(create)
 
-    return {
-      message: `Message ${id} succesfully modified:`,
-    };
+    const response: CreateMessageResponse = { message }
+    return response
   }
 
-  delete(id: number) {
-    const found = this.findOne(id);
-    this.messages = this.messages.filter((item) => item.id != found.id);
+  findMessage(find: FindMessage): FindMessageResponse {
+    const [message]: MessageEntity[] = this._messageRepository.find(find)
+
+    const response: FindMessageResponse = { message }
+    return response
+  }
+
+  findMessages(find: FindMessage): FindMessageResponse {
+    const messages: MessageEntity[] = this._messageRepository.find(find)
+
+    const response: FindMessageResponse = { messages }
+    return response
+  }
+
+  updateMessage(find: FindMessage, update: UpdateMessage): void {
+    const [message] = this._messageRepository.find(find)
+    if (!message) {
+      throw new NotFoundException({ message: MessageError.NotFound })
+    }
+
+    this._messageRepository.update(find, update)
+  }
+
+  deleteMessage(find: FindMessage): void {
+    const user = this._messageRepository.find(find)
+    if (!user) {
+      throw new NotFoundException({ message: MessageError.NotFound })
+    }
+
+    this._messageRepository.delete(find)
   }
 }

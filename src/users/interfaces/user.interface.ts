@@ -4,10 +4,7 @@ export class CreateUserResponse {
   user: UserEntity
 }
 
-export class GetUserResponse {
-  user: UserEntity
-}
-
 export class FindUserResponse {
-  users: UserEntity[]
+  user?: UserEntity
+  users?: UserEntity[]
 }

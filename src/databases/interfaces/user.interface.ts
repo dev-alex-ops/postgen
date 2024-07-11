@@ -13,6 +13,8 @@ export interface FindUser extends FindBase {
   username?: string
   password?: string
   email?: string
+  name?: string
+  lastName?: string
 }
 
 export interface UpdateUser {

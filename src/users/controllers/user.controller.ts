@@ -3,38 +3,71 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
+  ParseIntPipe,
   Post,
   Put,
-} from '@nestjs/common';
-import { UsersService } from '../services/user.service';
+  Query,
+} from '@nestjs/common'
+import { UserService } from '../services/user.service'
+import { CreateUserDto, FindUserDto, UpdateUserDto } from '../dtos/user.dto'
+import {
+  CreateUserResponse,
+  FindUserResponse,
+} from '../interfaces/user.interface'
+import {
+  CreateUser,
+  FindUser,
+  UpdateUser,
+} from '../../databases/interfaces/user.interface'
 
 @Controller('users')
-export class UsersController {
-  constructor(private readonly _service: UsersService) {}
+export class UserController {
+  constructor(private readonly _service: UserService) {}
 
-  @Get()
-  list() {
-    return this._service.list();
-  }
-
-  @Get(':userId')
-  find(@Param('userId') userId: number) {
-    return this._service.find(userId);
-  }
-
+  @HttpCode(HttpStatus.CREATED)
   @Post()
-  create(@Body() payload: any) {
-    return this._service.create(payload);
+  create(@Body() createDto: CreateUserDto): CreateUserResponse {
+    const create: CreateUser = { ...createDto }
+
+    return this._service.createUser(create)
   }
 
-  @Put(':userId')
-  update(@Param('userId') userId: number, @Body() payload: any) {
-    return this._service.update(userId, payload);
+  @HttpCode(HttpStatus.OK)
+  @Get(':id')
+  find(@Param('id', ParseIntPipe) id: number): FindUserResponse {
+    const find: FindUser = { id }
+
+    return this._service.findUser(find)
   }
 
-  @Delete(':userId')
-  delete(@Param('userId') userId: number) {
-    return this._service.delete(userId);
+  @HttpCode(HttpStatus.OK)
+  @Get()
+  findAll(@Query() findDto: FindUserDto): FindUserResponse {
+    const find: FindUser = { ...findDto }
+
+    return this._service.findUsers(find)
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Put(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: UpdateUserDto,
+  ): void {
+    const find: FindUser = { id }
+    const update: UpdateUser = { ...updateDto }
+
+    this._service.updateUser(find, update)
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Delete(':id')
+  delete(@Param('id', ParseIntPipe) id: number): void {
+    const find: FindUser = { id }
+
+    this._service.deleteUser(find)
   }
 }

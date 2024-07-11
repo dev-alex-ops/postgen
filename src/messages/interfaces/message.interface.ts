@@ -4,10 +4,7 @@ export class CreateMessageResponse {
   message: MessageEntity
 }
 
-export class GetMessageResponse {
-  message: MessageEntity
-}
-
 export class FindMessageResponse {
-  messages: MessageEntity[]
+  message?: MessageEntity
+  messages?: MessageEntity[]
 }
