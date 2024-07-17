@@ -6,7 +6,7 @@ export interface CreateUser extends CreateBase {
   email: string
   name: string
   lastName: string
-  minibio: string
+  minibio?: string
 }
 
 export interface FindUser extends FindBase {

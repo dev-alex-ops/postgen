@@ -11,6 +11,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
 import { MessageService } from '../services/message.service'
 import {
   CreateMessageDto,
@@ -27,6 +28,7 @@ import {
   UpdateMessage,
 } from '../../databases/interfaces/message.interface'
 
+@ApiTags('Messages')
 @Controller('messages')
 export class MessageController {
   constructor(private readonly _service: MessageService) {}

@@ -8,5 +8,5 @@ export class UserEntity extends BaseEntity {
   email: string
   name: string
   lastName: string
-  minibio: string
+  minibio?: string
 }
