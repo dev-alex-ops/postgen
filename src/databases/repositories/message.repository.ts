@@ -35,13 +35,13 @@ export class MessageRepository implements OnModuleInit {
   }
 
   create(create: CreateMessage): MessageEntity {
-    let { id, userId, content } = create
+    let { id, ...rest } = create
     if (!id) {
       this._maxId++
       id = this._maxId
     }
 
-    const newObject = { id, userId, content }
+    const newObject: MessageEntity = { id, ...rest }
     this._records.push(newObject)
     this._save()
 

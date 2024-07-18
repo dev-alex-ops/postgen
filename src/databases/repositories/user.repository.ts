@@ -34,13 +34,13 @@ export class UserRepository implements OnModuleInit {
   }
 
   create(create: CreateUser): UserEntity {
-    let { id, username, password, email, name, lastName, minibio } = create
+    let { id, ...rest } = create
     if (!id) {
       this._maxId++
       id = this._maxId
     }
 
-    const newObject = { id, username, password, email, name, lastName, minibio }
+    const newObject: UserEntity = { id, ...rest }
     this._records.push(newObject)
     this._save()
 
