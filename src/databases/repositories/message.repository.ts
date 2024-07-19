@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common'
-import { load, save } from '../../commons/helpers/file-system.helper'
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { SharedResource } from '../../config/resources/shared.resource'
 import { MessageEntity } from '../entities/message.entity'
 import { MessageError } from '../enums/message.enum'
 import {
@@ -9,29 +9,19 @@ import {
 } from '../interfaces/message.interface'
 
 @Injectable()
-export class MessageRepository implements OnModuleInit {
+export class MessageRepository {
   private _records: MessageEntity[]
   private _maxId: number
 
-  constructor() {
-    this._records = []
+  constructor(private _sharedResource: SharedResource) {
     this._maxId = 0
-  }
 
-  async onModuleInit() {
-    await this._load()
-  }
-
-  private async _load() {
-    this._records = await load<MessageEntity>(MessageEntity.className)
-    this._records.forEach(({ id }) => {
-      if (id > this._maxId) {
-        this._maxId = id
+    this._records = this._sharedResource.getMessageRecords()
+    this._records.forEach((item) => {
+      if (item.id >= this._maxId) {
+        this._maxId = item.id
       }
     })
-  }
-  private async _save() {
-    await save<MessageEntity>(MessageEntity.className, this._records)
   }
 
   create(create: CreateMessage): MessageEntity {
@@ -43,7 +33,7 @@ export class MessageRepository implements OnModuleInit {
 
     const newObject: MessageEntity = { id, ...rest }
     this._records.push(newObject)
-    this._save()
+    this._sharedResource.setMessageRecords(this._records)
 
     return newObject
   }
@@ -71,7 +61,7 @@ export class MessageRepository implements OnModuleInit {
       found.content = update.content
     }
 
-    this._save()
+    this._sharedResource.setMessageRecords(this._records)
   }
 
   delete(find: FindMessage): void {
@@ -93,6 +83,6 @@ export class MessageRepository implements OnModuleInit {
       )
     }
 
-    this._save()
+    this._sharedResource.setMessageRecords(this._records)
   }
 }

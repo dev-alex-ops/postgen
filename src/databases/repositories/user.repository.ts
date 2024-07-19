@@ -1,36 +1,24 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common'
-import { load, save } from '../../commons/helpers/file-system.helper'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { slugify } from '../../commons/helpers/validation.helper'
+import { SharedResource } from '../../config/resources/shared.resource'
 import { UserEntity } from '../entities/user.entity'
-import { MessageRepository } from './message.repository'
 import { CreateUser, FindUser, UpdateUser } from '../interfaces/user.interface'
 import { UserError } from '../enums/user.enum'
-import { FindMessage } from '../interfaces/message.interface'
 
 @Injectable()
-export class UserRepository implements OnModuleInit {
+export class UserRepository {
   private _records: UserEntity[]
   private _maxId: number
 
-  constructor(private _messageRepository: MessageRepository) {
-    this._records = []
+  constructor(private _sharedResource: SharedResource) {
     this._maxId = 0
-  }
 
-  async onModuleInit() {
-    await this._load()
-  }
-
-  private async _load(): Promise<void> {
-    this._records = await load<UserEntity>(UserEntity.className)
-    this._records.forEach(({ id }) => {
-      if (id > this._maxId) {
-        this._maxId = id
+    this._records = this._sharedResource.getUserRecords()
+    this._records.forEach((item) => {
+      if (item.id >= this._maxId) {
+        this._maxId = item.id
       }
     })
-  }
-  private async _save(): Promise<void> {
-    await save<UserEntity>(UserEntity.className, this._records)
   }
 
   create(create: CreateUser): UserEntity {
@@ -42,12 +30,13 @@ export class UserRepository implements OnModuleInit {
 
     const newObject: UserEntity = { id, ...rest }
     this._records.push(newObject)
-    this._save()
+    this._sharedResource.setUserRecords(this._records)
 
     return newObject
   }
 
   find(find: FindUser): UserEntity[] {
+    console.log('records:', this._records.length, this._records)
     if (find.id) {
       return this._records.filter(({ id }) => id === find.id)
     }
@@ -96,7 +85,7 @@ export class UserRepository implements OnModuleInit {
       found.minibio = update.minibio
     }
 
-    this._save()
+    this._sharedResource.setUserRecords(this._records)
   }
 
   delete(find: FindUser): void {
@@ -110,9 +99,6 @@ export class UserRepository implements OnModuleInit {
       1,
     )
 
-    const findMessages: FindMessage = { userId: found.id }
-    this._messageRepository.delete(findMessages)
-
-    this._save()
+    this._sharedResource.setUserRecords(this._records)
   }
 }

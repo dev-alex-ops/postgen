@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { UserEntity } from '../../databases/entities/user.entity'
+import { MessageRepository } from '../../databases/repositories/message.repository'
 import { UserRepository } from '../../databases/repositories/user.repository'
 import { UserError } from '../../databases/enums/user.enum'
 import {
@@ -15,10 +16,14 @@ import {
   CreateUserResponse,
   FindUserResponse,
 } from '../interfaces/user.interface'
+import { FindMessage } from 'src/databases/interfaces/message.interface'
 
 @Injectable()
 export class UserService {
-  constructor(private _repository: UserRepository) {}
+  constructor(
+    private _repository: UserRepository,
+    private _messageRepository: MessageRepository,
+  ) {}
 
   createUser(create: CreateUser): CreateUserResponse {
     let find: FindUser
@@ -80,10 +85,17 @@ export class UserService {
   }
 
   deleteUser(find: FindUser): void {
-    const user = this._repository.find(find)
+    const [user] = this._repository.find(find)
     if (!user) {
       throw new NotFoundException({ message: UserError.NotFound })
     }
+
+    const findMessages: FindMessage = { userId: user.id }
+    const messages = this._messageRepository.find(findMessages)
+    messages.forEach((item) => {
+      const findMessage: FindMessage = { id: item.id }
+      this._messageRepository.delete(findMessage)
+    })
 
     this._repository.delete(find)
   }
