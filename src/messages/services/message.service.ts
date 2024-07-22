@@ -28,7 +28,6 @@ export class MessageService {
 
   createMessage(create: CreateMessage): CreateMessageResponse {
     const findUser: FindUser = { id: create.userId }
-    console.log('create:', create, 'findUser', findUser)
     const [user] = this._userRepository.find(findUser)
     if (!user) {
       throw new BadRequestException({ message: UserError.NotFound })

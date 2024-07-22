@@ -1,19 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { load, save } from '../../commons/helpers/file-system.helper'
 import { slugify } from '../../commons/helpers/validation.helper'
-import { SharedResource } from '../../config/resources/shared.resource'
 import { UserEntity } from '../entities/user.entity'
-import { CreateUser, FindUser, UpdateUser } from '../interfaces/user.interface'
 import { UserError } from '../enums/user.enum'
+import { CreateUser, FindUser, UpdateUser } from '../interfaces/user.interface'
 
 @Injectable()
 export class UserRepository {
   private _records: UserEntity[]
   private _maxId: number
 
-  constructor(private _sharedResource: SharedResource) {
-    this._maxId = 0
+  constructor() {
+    this._load()
+  }
 
-    this._records = this._sharedResource.getUserRecords()
+  _load() {
+    this._records = load<UserEntity>(UserEntity.className)
+
+    this._maxId = 0
     this._records.forEach((item) => {
       if (item.id >= this._maxId) {
         this._maxId = item.id
@@ -21,7 +25,13 @@ export class UserRepository {
     })
   }
 
+  _save() {
+    save<UserEntity>(UserEntity.className, this._records)
+  }
+
   create(create: CreateUser): UserEntity {
+    this._load()
+
     let { id, ...rest } = create
     if (!id) {
       this._maxId++
@@ -30,13 +40,14 @@ export class UserRepository {
 
     const newObject: UserEntity = { id, ...rest }
     this._records.push(newObject)
-    this._sharedResource.setUserRecords(this._records)
+    this._save()
 
     return newObject
   }
 
   find(find: FindUser): UserEntity[] {
-    console.log('records:', this._records.length, this._records)
+    this._load()
+
     if (find.id) {
       return this._records.filter(({ id }) => id === find.id)
     }
@@ -61,6 +72,8 @@ export class UserRepository {
   }
 
   update(find: FindUser, update: UpdateUser): void {
+    this._load()
+
     const [found] = this.find(find)
     if (!found) {
       throw new NotFoundException({ message: UserError.NotFound })
@@ -85,10 +98,12 @@ export class UserRepository {
       found.minibio = update.minibio
     }
 
-    this._sharedResource.setUserRecords(this._records)
+    this._save()
   }
 
   delete(find: FindUser): void {
+    this._load()
+
     const [found] = this.find(find)
     if (!found) {
       throw new NotFoundException({ message: UserError.NotFound })
@@ -99,6 +114,6 @@ export class UserRepository {
       1,
     )
 
-    this._sharedResource.setUserRecords(this._records)
+    this._save()
   }
 }

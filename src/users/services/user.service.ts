@@ -7,6 +7,7 @@ import { UserEntity } from '../../databases/entities/user.entity'
 import { MessageRepository } from '../../databases/repositories/message.repository'
 import { UserRepository } from '../../databases/repositories/user.repository'
 import { UserError } from '../../databases/enums/user.enum'
+import { FindMessage } from '../../databases/interfaces/message.interface'
 import {
   CreateUser,
   FindUser,
@@ -16,7 +17,6 @@ import {
   CreateUserResponse,
   FindUserResponse,
 } from '../interfaces/user.interface'
-import { FindMessage } from 'src/databases/interfaces/message.interface'
 
 @Injectable()
 export class UserService {

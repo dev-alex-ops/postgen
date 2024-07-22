@@ -1,9 +1,8 @@
 import * as fs from 'fs'
-import * as path from 'path'
 
 const DATA_DIRECTORY = '/data'
 
-async function _readFile(filename: string): Promise<string> {
+function _readFile(filename: string): string {
   let content: string
 
   const filepath = `.${DATA_DIRECTORY}/${filename}`
@@ -17,7 +16,7 @@ async function _readFile(filename: string): Promise<string> {
 
   return content
 }
-async function _writeFile(filename: string, content: string): Promise<void> {
+function _writeFile(filename: string, content: string): void {
   const filepath = `.${DATA_DIRECTORY}/${filename}`
   try {
     if (!fs.existsSync(`.${DATA_DIRECTORY}`)) {
@@ -30,12 +29,12 @@ async function _writeFile(filename: string, content: string): Promise<void> {
   }
 }
 
-export async function load<T>(fileName: string): Promise<T[]> {
+export function load<T>(fileName: string): T[] {
   let records: T[] = []
 
   const filename = `${fileName}.json`
   try {
-    const rawContent = await _readFile(filename)
+    const rawContent = _readFile(filename)
     if (rawContent) {
       records = JSON.parse(rawContent) as T[]
     }
@@ -46,7 +45,7 @@ export async function load<T>(fileName: string): Promise<T[]> {
   return records
 }
 
-export async function save<T>(fileName: string, content: T[]): Promise<void> {
+export function save<T>(fileName: string, content: T[]): void {
   const filename = `${fileName}.json`
   try {
     _writeFile(filename, JSON.stringify(content))
