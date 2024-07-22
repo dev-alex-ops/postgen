@@ -1,39 +1,37 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { load, save } from '../../commons/helpers/file-system.helper'
 import { slugify } from '../../commons/helpers/validation.helper'
 import { UserEntity } from '../entities/user.entity'
-import { MessageRepository } from './message.repository'
-import { CreateUser, FindUser, UpdateUser } from '../interfaces/user.interface'
 import { UserError } from '../enums/user.enum'
-import { FindMessage } from '../interfaces/message.interface'
+import { CreateUser, FindUser, UpdateUser } from '../interfaces/user.interface'
 
 @Injectable()
-export class UserRepository implements OnModuleInit {
+export class UserRepository {
   private _records: UserEntity[]
   private _maxId: number
 
-  constructor(private _messageRepository: MessageRepository) {
-    this._records = []
+  constructor() {
+    this._load()
+  }
+
+  _load() {
+    this._records = load<UserEntity>(UserEntity.className)
+
     this._maxId = 0
-  }
-
-  async onModuleInit() {
-    await this._load()
-  }
-
-  private async _load(): Promise<void> {
-    this._records = await load<UserEntity>(UserEntity.className)
-    this._records.forEach(({ id }) => {
-      if (id > this._maxId) {
-        this._maxId = id
+    this._records.forEach((item) => {
+      if (item.id >= this._maxId) {
+        this._maxId = item.id
       }
     })
   }
-  private async _save(): Promise<void> {
-    await save<UserEntity>(UserEntity.className, this._records)
+
+  _save() {
+    save<UserEntity>(UserEntity.className, this._records)
   }
 
   create(create: CreateUser): UserEntity {
+    this._load()
+
     let { id, ...rest } = create
     if (!id) {
       this._maxId++
@@ -48,6 +46,8 @@ export class UserRepository implements OnModuleInit {
   }
 
   find(find: FindUser): UserEntity[] {
+    this._load()
+
     if (find.id) {
       return this._records.filter(({ id }) => id === find.id)
     }
@@ -72,6 +72,8 @@ export class UserRepository implements OnModuleInit {
   }
 
   update(find: FindUser, update: UpdateUser): void {
+    this._load()
+
     const [found] = this.find(find)
     if (!found) {
       throw new NotFoundException({ message: UserError.NotFound })
@@ -100,6 +102,8 @@ export class UserRepository implements OnModuleInit {
   }
 
   delete(find: FindUser): void {
+    this._load()
+
     const [found] = this.find(find)
     if (!found) {
       throw new NotFoundException({ message: UserError.NotFound })
@@ -109,9 +113,6 @@ export class UserRepository implements OnModuleInit {
       this._records.findIndex(({ id }) => id === found.id),
       1,
     )
-
-    const findMessages: FindMessage = { userId: found.id }
-    this._messageRepository.delete(findMessages)
 
     this._save()
   }

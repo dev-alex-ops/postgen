@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { load, save } from '../../commons/helpers/file-system.helper'
 import { MessageEntity } from '../entities/message.entity'
 import { MessageError } from '../enums/message.enum'
@@ -9,32 +9,32 @@ import {
 } from '../interfaces/message.interface'
 
 @Injectable()
-export class MessageRepository implements OnModuleInit {
+export class MessageRepository {
   private _records: MessageEntity[]
   private _maxId: number
 
   constructor() {
-    this._records = []
+    this._load()
+  }
+
+  _load() {
+    this._records = load<MessageEntity>(MessageEntity.className)
+
     this._maxId = 0
-  }
-
-  async onModuleInit() {
-    await this._load()
-  }
-
-  private async _load() {
-    this._records = await load<MessageEntity>(MessageEntity.className)
-    this._records.forEach(({ id }) => {
-      if (id > this._maxId) {
-        this._maxId = id
+    this._records.forEach((item) => {
+      if (item.id >= this._maxId) {
+        this._maxId = item.id
       }
     })
   }
-  private async _save() {
-    await save<MessageEntity>(MessageEntity.className, this._records)
+
+  _save() {
+    save<MessageEntity>(MessageEntity.className, this._records)
   }
 
   create(create: CreateMessage): MessageEntity {
+    this._load()
+
     let { id, ...rest } = create
     if (!id) {
       this._maxId++
@@ -49,6 +49,8 @@ export class MessageRepository implements OnModuleInit {
   }
 
   find(find: FindMessage): MessageEntity[] {
+    this._load()
+
     if (find.id) {
       return this._records.filter(({ id }) => id === find.id)
     }
@@ -62,6 +64,8 @@ export class MessageRepository implements OnModuleInit {
   }
 
   update(find: FindMessage, update: UpdateMessage): void {
+    this._load()
+
     const [found] = this.find(find)
     if (!found) {
       throw new NotFoundException({ message: MessageError.NotFound })
@@ -75,21 +79,23 @@ export class MessageRepository implements OnModuleInit {
   }
 
   delete(find: FindMessage): void {
-    const found = this.find(find)
-    if (found.length !== 0) {
+    this._load()
+
+    const [found] = this.find(find)
+    if (!found) {
       throw new NotFoundException({ message: MessageError.NotFound })
     }
 
     if (find.id) {
       this._records.splice(
-        this._records.findIndex(({ id }) => id === found[0].id),
+        this._records.findIndex(({ id }) => id === found.id),
         1,
       )
     }
 
     if (find.userId) {
       this._records = this._records.filter(
-        ({ userId }) => userId !== find.userId,
+        ({ userId }) => userId !== found.userId,
       )
     }
 
